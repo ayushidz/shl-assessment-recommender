@@ -9,7 +9,7 @@ import faiss
 app = FastAPI(title="SHL Assessment Recommendation API")
 
 # ✅ Load dataset
-df = pd.read_excel("C:\\Users\\ayush\\Downloads\\Gen_AI Dataset.xlsx")
+df = pd.read_excel("Gen_AI Dataset.xlsx")
 df["combined_text"] = df.astype(str).apply(" ".join, axis=1)
 df["combined_text"] = df["combined_text"].str.replace("\n", " ").str.strip()
 
@@ -37,3 +37,4 @@ def recommend(data: Query):
     results = df.iloc[I[0]][["Query", "Assessment_url"]].copy()
     results["similarity_score"] = D[0]
     return results.to_dict(orient="records")
+
