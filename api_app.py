@@ -1,51 +1,75 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import pandas as pd
 import numpy as np
 import faiss
 from sentence_transformers import SentenceTransformer
+import os
 
 app = FastAPI(title="SHL Assessment Recommendation API")
 
-# Lazy global variables
-model = None
-index = None
-df = None
+# Global cache
+model, index, df = None, None, None
+
 
 def load_resources():
+    """Load model, dataset, and FAISS index (lazy loading)."""
     global model, index, df
     if model is None:
-        print("🔹 Loading model and data for the first time...")
-        df = pd.read_excel("Gen_AI Dataset.xlsx")
+        print("🔹 Loading model and dataset for the first time...")
+
+        # ✅ Auto-detect dataset path for Render
+        dataset_path = "Gen_AI Dataset.xlsx"
+        if not os.path.exists(dataset_path):
+            raise FileNotFoundError(f"Dataset file not found: {dataset_path}")
+
+        df = pd.read_excel(dataset_path)
         df["combined_text"] = df.astype(str).apply(" ".join, axis=1)
         df["combined_text"] = df["combined_text"].str.replace("\n", " ").str.strip()
 
-        # ✅ Use smaller, faster model for Render
-        model = SentenceTransformer('paraphrase-MiniLM-L3-v2')
+        # ✅ Use a lightweight model for faster inference on Render
+        model = SentenceTransformer("paraphrase-MiniLM-L3-v2")
 
+        # Create FAISS index
         embeddings = model.encode(df["combined_text"].tolist(), normalize_embeddings=True)
         index = faiss.IndexFlatIP(embeddings.shape[1])
         index.add(np.array(embeddings))
 
     return model, index, df
 
-class Query(BaseModel):
+
+# ✅ Input Schema
+class QueryInput(BaseModel):
     query: str
     top_k: int = 5
 
+
+# ✅ Health Endpoint
 @app.get("/health")
 def health_check():
-    return {"status": "ok"}
+    """Simple endpoint to check if the API is running."""
+    return {"status": "healthy"}
 
+
+# ✅ Recommendation Endpoint
 @app.post("/recommend")
-def recommend(data: Query):
+def recommend(data: QueryInput):
+    """Given a job description or query, recommend relevant SHL assessments."""
     model, index, df = load_resources()
-    q_emb = model.encode([data.query], normalize_embeddings=True)
-    D, I = index.search(q_emb, data.top_k)
-    results = df.iloc[I[0]].copy()
+
+    query = data.query.strip()
+    k = min(max(data.top_k, 1), 10)  # between 1 and 10
+
+    if not query:
+        raise HTTPException(status_code=400, detail="Query cannot be empty.")
+
+    # Compute embedding & similarity
+    q_emb = model.encode([query], normalize_embeddings=True)
+    D, I = index.search(q_emb, k)
 
     recommendations = []
-    for _, row in results.iterrows():
+    for idx, score in zip(I[0], D[0]):
+        row = df.iloc[idx]
         recommendations.append({
             "url": row.get("Assessment_url", ""),
             "name": row.get("Assessment_Name", "N/A"),
@@ -57,4 +81,3 @@ def recommend(data: Query):
         })
 
     return {"recommended_assessments": recommendations}
-
