@@ -1,6 +1,7 @@
-streamlit
+fastapi
+uvicorn
 pandas
 numpy
-sentence-transformers
 faiss-cpu
+sentence-transformers
 openpyxl
