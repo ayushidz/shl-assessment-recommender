@@ -42,6 +42,19 @@ def recommend(data: Query):
     model, index, df = load_resources()
     q_emb = model.encode([data.query], normalize_embeddings=True)
     D, I = index.search(q_emb, data.top_k)
-    results = df.iloc[I[0]][["Query", "Assessment_url"]].copy()
-    results["similarity_score"] = D[0]
-    return results.to_dict(orient="records")
+    results = df.iloc[I[0]].copy()
+
+    recommendations = []
+    for _, row in results.iterrows():
+        recommendations.append({
+            "url": row.get("Assessment_url", ""),
+            "name": row.get("Assessment_Name", "N/A"),
+            "adaptive_support": row.get("Adaptive_Support", "No"),
+            "description": row.get("Description", "N/A"),
+            "duration": int(row.get("Duration", 0)),
+            "remote_support": row.get("Remote_Support", "Yes"),
+            "test_type": [row.get("Test_Type", "Knowledge & Skills")]
+        })
+
+    return {"recommended_assessments": recommendations}
+
