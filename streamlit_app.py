@@ -5,7 +5,7 @@ import numpy as np
 import faiss
 
 # Load Excel data
-df = pd.read_excel("C:\\Users\\ayush\\Downloads\\Gen_AI Dataset.xlsx")
+df = pd.read_excel("Gen_AI Dataset.xlsx")
 df["combined_text"] = df.astype(str).apply(" ".join, axis=1)
 df["combined_text"] = df["combined_text"].str.replace("\n", " ").str.strip()
 
