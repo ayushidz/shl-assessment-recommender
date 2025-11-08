@@ -3,7 +3,7 @@ import requests
 import pandas as pd
 
 # Your deployed FastAPI backend URL
-API_BASE = "https://shl-assessment-recommender-19e6.onrender.com"
+API_BASE = "https://Ayushio-o-shl-assessment-recommender-api.hf.space"
 
 st.set_page_config(page_title="SHL Assessment Recommender", page_icon="🧠", layout="wide")
 
