@@ -1,7 +1,7 @@
-fastapi
-uvicorn
-pandas
-numpy
-faiss-cpu
-sentence-transformers
+fastapi==0.95.2
+uvicorn==0.24.0
+pandas==2.1.0
+numpy==1.25.0
+faiss-cpu==1.8.5
+sentence-transformers==2.2.2
 gradio
